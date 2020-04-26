@@ -1,7 +1,7 @@
 library(tidyverse)
 library(haven)
 
-Demographic_Background <- read_dta("/Users/zoe/Desktop/CHARLS/2015_data/Biomarker.dta") %>%
+Demographic_Background <- read_dta("/Users/zoe/Desktop/CHARLS/2015_data/Demographic_Background.dta") %>%
   select(ID, ba000_w2_3, ba004_w3_1) %>%
   filter(!is.na(ID), !is.na(ba000_w2_3), !is.na(ba004_w3_1))
 
@@ -12,12 +12,12 @@ Family_transfer <- cbind(Family_transfer, total_support) %>%
   select(ID, total_support)
 
 Individual_Income <- read_dta("/Users/zoe/Desktop/CHARLS/2015_data/Individual_Income.dta") %>%
-  select(ID, ga002, hc005, hd001) %>%
-  filter(!is.na(ID), !is.na(ga002), !is.na(hc005), !is.na(hd001))
+  select(ID, hc005, hd001) %>%
+  filter(!is.na(ID), !is.na(hc005), !is.na(hd001))
 
 Child <- read_dta("/Users/zoe/Desktop/CHARLS/2015_data/Child.dta") %>%
-  select(ID, gender, cb053_2, cb069) %>%
-  filter(!is.na(ID), !is.na(gender), !is.na(cb053_2), !is.na(cb069))
+  select(ID, gender, cb069) %>%
+  filter(!is.na(ID), !is.na(gender), !is.na(cb069))
 
 Health <- read_dta("/Users/zoe/Desktop/CHARLS/2015_data/Health_Status_and_Functioning.dta") %>%
   select(ID, zda040, zda059, da002_w2_1, da041) %>%
