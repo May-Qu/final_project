@@ -24,9 +24,10 @@ H_2 <- Happiness%>%
   filter(dc043_w3==6&dc044_w3==6)
 #不存在两个问题都选6的情况
 hindex<-rbind(H_4,H_3a,H_3b)
-table(hindex)
+#加入加权的幸福指数
 
-Demographic_Background <- read_dta("2015 data/Biomarker.dta") %>%
+
+Demographic_Background <- read_dta("2015_data/Demographic_Background.dta") %>%
   select(ID, ba000_w2_3, ba004_w3_1) %>%
   filter(!is.na(ID), !is.na(ba000_w2_3), !is.na(ba004_w3_1))
 
@@ -47,5 +48,12 @@ Child <- read_dta("2015_data/Child.dta") %>%
 Health <- read_dta("2015_data/Health_Status_and_Functioning.dta") %>%
   select(ID, zda040, zda059, da002_w2_1, da041) %>%
   filter(!is.na(ID), !is.na(zda040), !is.na(zda059), !is.na(da002_w2_1), !is.na(da041))
+
+hindex_v1 <- inner_join(x= hindex,y= Child,by = "ID")
+hindex_v2 <- inner_join(x= hindex_v1,y= Demographic_Background,by = "ID")
+hindex_v3 <- inner_join(x= hindex_v2,y= Family_transfer,by = "ID")
+hindex_v4 <- inner_join(x= hindex_v3,y= Health,by = "ID")
+hindex_final <- inner_join(x= hindex_v4,y= Individual_Income,by = "ID")
+#得到全部合并的数据
 
 
