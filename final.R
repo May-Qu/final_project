@@ -13,7 +13,7 @@ Happiness <- Health_Status_and_Functioning %>%
 H_4 <- Happiness %>%
   filter(dc043_w3!=6&dc044_w3!=6)%>%
   mutate(index =0.2*dc042_w3 + 0.2* dc043_w3 +0.2*dc044_w3 + 0.4*dc028)
-#?ĸ????ⶼ??Ч
+
 H_3a <- Happiness %>%
   filter(dc043_w3==6)%>%
   mutate(index = 0.3*dc044_w3+0.3*dc042_w3+0.4*dc028)
@@ -22,9 +22,9 @@ H_3b <- Happiness %>%
   mutate(index = 0.3*dc043_w3+0.3*dc042_w3+0.4*dc028)
 H_2 <- Happiness%>%
   filter(dc043_w3==6&dc044_w3==6)
-#??????��?????ⶼѡ6??????
+#No obs with two invalid answers
 hindex<-rbind(H_4,H_3a,H_3b)
-#??????Ȩ???Ҹ?ָ??
+#weighted happiness index added
 
 
 Demographic_Background <- read_dta("2015_data/Demographic_Background.dta") %>%
@@ -38,8 +38,8 @@ Family_transfer <- cbind(Family_transfer, total_support) %>%
   select(ID, total_support)
 
 Individual_Income <- read_dta("2015_data/Individual_Income.dta") %>%
-  select(ID, hc005, hd001) %>%
-  filter(!is.na(ID), !is.na(hc005), !is.na(hd001))
+  select(ID, ga002, hc005,hd001) %>%
+  filter(!is.na(ID), !is.na(ga002),!is.na(hc005),!is.na(hd001))
 
 Child <- read_dta("2015_data/Child.dta") %>%
   select(ID, gender, cb069) %>%
@@ -54,6 +54,6 @@ hindex_v2 <- inner_join(x= hindex_v1,y= Demographic_Background,by = "ID")
 hindex_v3 <- inner_join(x= hindex_v2,y= Family_transfer,by = "ID")
 hindex_v4 <- inner_join(x= hindex_v3,y= Health,by = "ID")
 hindex_final <- inner_join(x= hindex_v4,y= Individual_Income,by = "ID")
-#?õ?ȫ???ϲ???????
+#Merge the final dataset for machine learning
 
 
