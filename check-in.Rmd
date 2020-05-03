@@ -7,7 +7,6 @@ editor_options:
 ```{r, include=FALSE}
 library(haven)
 library(tidyverse)
-library(tinytex)
 ```
 Our project is to predict the happiness of middle-age people and elders in China. The majority of our observations are retired and many of them are plagued by health problems. What we care about is whether they are satisfied with their current lives and what policies can be devised accordingly to improve their happiness. (data source: http://charls.pku.edu.cn/index.html)
 
