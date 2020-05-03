@@ -1,6 +1,7 @@
 #final
 library(haven)
 library(tidyverse)
+library(tidymodels)
 
 Health_Status_and_Functioning <- read_dta("2015_data/Health_Status_and_Functioning.dta")
 View(Health_Status_and_Functioning)
@@ -54,6 +55,53 @@ hindex_v2 <- inner_join(x= hindex_v1,y= Demographic_Background,by = "ID")
 hindex_v3 <- inner_join(x= hindex_v2,y= Family_transfer,by = "ID")
 hindex_v4 <- inner_join(x= hindex_v3,y= Health,by = "ID")
 hindex_final <- inner_join(x= hindex_v4,y= Individual_Income,by = "ID")
+hindex_final <- rename(hindex_final,child_gender = gender)
 #Merge the final dataset for machine learning
+
+hindex_ml <- hindex_final[,-1]
+set.seed(seed = 20200503)
+split <- initial_split(hindex_ml, prop = 0.8)
+index_training <- training(split) 
+index_testing <- testing(split)
+
+index_resamples <- vfold_cv(data = index_training, v = 10)
+
+train_lm <- function(split, formula, ...) {
+  analysis_data <- analysis(split)
+  model <- linear_reg() %>% 
+    set_engine("lm") %>% 
+    fit(formula, data = analysis_data)
+  assessment_data <- assessment(split)
+  rmse <- bind_cols( assessment_data, predict(model, assessment_data) ) %>% 
+    rmse(truth =index, estimate = .pred) %>% 
+    pull(.estimate)
+  return(rmse)
+}
+
+
+train_lm2 <- function(split, formula, ...) {
+   ames_recipe <- recipe(formula, data = analysis(split)) %>% 
+   step_log(sale_price) %>% 
+   step_center(square_footage) %>%
+   step_scale(square_footage) %>%
+   prep()
+  
+   analysis_data <- analysis(split) %>% 
+   bake(object = ames_recipe, new_data = .)
+   
+   model <- linear_reg() %>% 
+   set_engine("lm") %>% 
+   fit(formula, data = analysis_data)
+   assessment_data <- assessment(split) %>% 
+   bake(object = ames_recipe, new_data = .)
+   rmse <- bind_cols( assessment_data, predict(model, assessment_data) ) %>% 
+   rmse(truth = sale_price, estimate = .pred) %>% pull(.estimate)
+  return(rmse)
+}
+ames_resamples %>% 
+  mutate( rmse1 = map_dbl(splits, ~train_lm(split = .x, formula = index ~.)) ) %>% 
+  select(id, rmse1)
+
+
 
 
