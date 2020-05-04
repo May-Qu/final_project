@@ -60,21 +60,23 @@ hindex_final <- hindex_final%>%
   rename(child_gender = gender,child_income = cb069)%>%
   mutate(age = 2020-ba004_w3_1,)
 #Merge the final dataset for machine learning
-mean(hindex_ml$ga002)
-
 
 hindex_ml <- hindex_final[,-6]
 hindex_ml <- hindex_ml[,-1]
+
 library(Hmisc)
 label(hindex_ml$index) <- "happiness index"
 
-for(ga002 in hindex_ml){
-  if(ga002 > 17972){
-    hindex_ml<- mutate(hindex_ml,amount_income = 1)
-  }else{
-    hindex_ml<- mutate(hindex_ml,amount_income = 0)
-  }
-  }
+mean(hindex_ml$ga002)
+mean(hindex_ml$hc005)
+mean(hindex_ml$hd001)
+mean(hindex_ml$total_support)
+
+hindex_ml <- hindex_ml %>%
+  mutate(income = ifelse(ga002>17000,"1","0"))%>%
+  mutate(Deposit = ifelse(hc005>25000,"1","0"))%>%
+  mutate(loan = ifelse(hd001<6000,"1","0"))%>%
+  mutate(family_support = ifelse(total_support>5000,"1","0"))
 
 
 set.seed(seed = 20200503)
@@ -98,33 +100,22 @@ train_lm <- function(split, formula, ...) {
 
 
 train_lm2 <- function(split, formula, ...) {
-   index_recipe <- recipe(formula, data = analysis(split)) %>% 
-   step_center(ga002,hc005,hd001,total_support) %>%
-   step_scale(ga002,hc005,hd001,total_support)
-   prep()
   
-   analysis_data <- analysis(split) %>% 
-   bake(object = index_recipe, new_data = .)
-   
-   model2 <- linear_reg() %>% 
-   set_engine("lm") %>% 
-   fit(formula, data = analysis_data)
-   
-   assessment_data <- assessment(split) %>% 
-   bake(object = index_recipe, new_data = .)
-   rmse <- bind_cols( assessment_data, predict(model2, assessment_data) ) %>% 
-   rmse(truth = as.numeric(index), estimate = .pred2) %>% 
-   pull(.estimate)
+  analysis_data <- analysis(split)
+  model2 <- linear_reg() %>% 
+    set_engine("lm") %>% 
+    fit(formula, data = analysis_data)
+  assessment_data <- assessment(split)
+  rmse <- bind_cols( assessment_data, predict(model1, assessment_data) ) %>% 
+    rmse(truth =as.numeric(index), estimate = .pred) %>% 
+    pull(.estimate)
   return(rmse)
 }
 
 index_resamples %>% 
-  mutate( rmse1 = map_dbl(splits, ~train_lm(split = .x, formula = index ~.)) )%>%
-  select(id,rmse1)
+  mutate(rmse1 = map_dbl(splits, ~train_lm(split = .x, formula = index ~ child_gender+child_income+ba000_w2_3+total_support+zda040+zda059+da002_w2_1+da041+ga002+hc005+hd001+age)) )%>%
+  mutate(rmse2 = map_dbl(splits, ~train_lm(split = .x, formula = index ~ child_gender+child_income+ba000_w2_3+family_support+zda040+zda059+da002_w2_1+da041+income+Deposit+loan+age)) )%>%
+  select(id,rmse1,rmse2)
 
-
-
-
-is.numeric(hindex_ml$index)
 
 
