@@ -2,7 +2,9 @@ library(haven)
 library(tidyverse)
 library(tidymodels)
 
-happiness <- read_csv("/Users/zoe/Desktop/happiness.csv") %>%
+origin <- read_csv("/Users/zoe/Desktop/happiness.csv")
+
+happiness <- origin %>%
   filter(index != 3)
 
 hsubset <- happiness %>%
@@ -61,7 +63,7 @@ prediction %>%
 
 
 # knn & cart regression model
-hr <- happiness %>%
+hr <- origin %>%
   select(-ID)
 
 sr <- initial_split(data = hr, prop = 0.8)
@@ -71,7 +73,7 @@ h_testing <- testing(sr)
 h_resamples <- vfold_cv(data = hr, v = 10)
 
 train_imputation <- function(split, formula, model, ...) {
-  analysis_data <- analysis(sr)
+  analysis_data <- analysis(split)
   if (model == "knn") {
     model <-
     nearest_neighbor(mode = "regression", 
@@ -84,7 +86,7 @@ train_imputation <- function(split, formula, model, ...) {
       set_engine("rpart") %>%
       fit(formula, data = analysis_data)
   }
-  assessment_data <- assessment(sr)
+  assessment_data <- assessment(split)
   rmse <- bind_cols(
     assessment_data,
     predict(model, assessment_data)
