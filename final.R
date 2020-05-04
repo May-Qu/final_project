@@ -50,19 +50,33 @@ Health <- read_dta("2015_data/Health_Status_and_Functioning.dta") %>%
   select(ID, zda040, zda059, da002_w2_1, da041) %>%
   filter(!is.na(ID), !is.na(zda040), !is.na(zda059), !is.na(da002_w2_1), !is.na(da041))
 
-hindex_v1 <- inner_join(x= hindex,y= Child,by = "ID")
-hindex_v1 <- select(hindex_v1,ID,index)
+hindex_v0 <- select(hindex,ID,index)
+hindex_v1 <- inner_join(x= hindex_v0,y= Child,by = "ID")
 hindex_v2 <- inner_join(x= hindex_v1,y= Demographic_Background,by = "ID")
 hindex_v3 <- inner_join(x= hindex_v2,y= Family_transfer,by = "ID")
 hindex_v4 <- inner_join(x= hindex_v3,y= Health,by = "ID")
 hindex_final <- inner_join(x= hindex_v4,y= Individual_Income,by = "ID")
 hindex_final <- hindex_final%>%
-  rename(child_gender = gender)%>%
-  mutate(age = 2020 - ba004_w3_1)
+  rename(child_gender = gender,child_income = cb069)%>%
+  mutate(age = 2020-ba004_w3_1,)
 #Merge the final dataset for machine learning
+mean(hindex_ml$ga002)
 
-hindex_ml <- hindex_final[,-1]
-hindex_ml <- hindex_ml[,-9]
+
+hindex_ml <- hindex_final[,-6]
+hindex_ml <- hindex_ml[,-1]
+library(Hmisc)
+label(hindex_ml$index) <- "happiness index"
+
+for(ga002 in hindex_ml){
+  if(ga002 > 17972){
+    hindex_ml<- mutate(hindex_ml,amount_income = 1)
+  }else{
+    hindex_ml<- mutate(hindex_ml,amount_income = 0)
+  }
+  }
+
+
 set.seed(seed = 20200503)
 split <- initial_split(hindex_ml, prop = 0.8)
 index_training <- training(split) 
@@ -72,40 +86,45 @@ index_resamples <- vfold_cv(data = index_training, v = 10)
 
 train_lm <- function(split, formula, ...) {
   analysis_data <- analysis(split)
-  model <- linear_reg() %>% 
+  model1 <- linear_reg() %>% 
     set_engine("lm") %>% 
     fit(formula, data = analysis_data)
   assessment_data <- assessment(split)
-  rmse <- bind_cols( assessment_data, predict(model, assessment_data) ) %>% 
-    rmse(truth =index, estimate = .pred) %>% 
+  rmse <- bind_cols( assessment_data, predict(model1, assessment_data) ) %>% 
+    rmse(truth =as.numeric(index), estimate = .pred) %>% 
     pull(.estimate)
   return(rmse)
 }
 
 
 train_lm2 <- function(split, formula, ...) {
-   ames_recipe <- recipe(formula, data = analysis(split)) %>% 
-   step_log(ga_002,hc005,hd001,total_support) %>% 
-   step_center(square_footage) %>%
-   step_scale(square_footage) %>%
+   index_recipe <- recipe(formula, data = analysis(split)) %>% 
+   step_center(ga002,hc005,hd001,total_support) %>%
+   step_scale(ga002,hc005,hd001,total_support)
    prep()
   
    analysis_data <- analysis(split) %>% 
-   bake(object = ames_recipe, new_data = .)
+   bake(object = index_recipe, new_data = .)
    
-   model <- linear_reg() %>% 
+   model2 <- linear_reg() %>% 
    set_engine("lm") %>% 
    fit(formula, data = analysis_data)
+   
    assessment_data <- assessment(split) %>% 
-   bake(object = ames_recipe, new_data = .)
-   rmse <- bind_cols( assessment_data, predict(model, assessment_data) ) %>% 
-   rmse(truth = sale_price, estimate = .pred) %>% pull(.estimate)
+   bake(object = index_recipe, new_data = .)
+   rmse <- bind_cols( assessment_data, predict(model2, assessment_data) ) %>% 
+   rmse(truth = as.numeric(index), estimate = .pred2) %>% 
+   pull(.estimate)
   return(rmse)
 }
-ames_resamples %>% 
-  mutate( rmse1 = map_dbl(splits, ~train_lm(split = .x, formula = index ~.)) ) %>% 
-  select(id, rmse1)
+
+index_resamples %>% 
+  mutate( rmse1 = map_dbl(splits, ~train_lm(split = .x, formula = index ~.)) )%>%
+  select(id,rmse1)
 
 
+
+
+is.numeric(hindex_ml$index)
 
 
