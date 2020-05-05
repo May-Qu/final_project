@@ -85,6 +85,8 @@ index_training <- training(split)
 index_testing <- testing(split)
 
 index_resamples <- vfold_cv(data = index_training, v = 10)
+index_resamples2 <- vfold_cv(data = index_training, v = 15)
+index_resamples3 <- vfold_cv(data = index_training, v = 5)
 
 train_lm <- function(split, formula, ...) {
   analysis_data <- analysis(split)
@@ -113,6 +115,16 @@ train_lm2 <- function(split, formula, ...) {
 }
 
 index_resamples %>% 
+  mutate(rmse1 = map_dbl(splits, ~train_lm(split = .x, formula = index ~ child_gender+child_income+ba000_w2_3+total_support+zda040+zda059+da002_w2_1+da041+ga002+hc005+hd001+age)) )%>%
+  mutate(rmse2 = map_dbl(splits, ~train_lm(split = .x, formula = index ~ child_gender+child_income+ba000_w2_3+family_support+zda040+zda059+da002_w2_1+da041+income+Deposit+loan+age)) )%>%
+  select(id,rmse1,rmse2)
+
+index_resamples2 %>% 
+  mutate(rmse1 = map_dbl(splits, ~train_lm(split = .x, formula = index ~ child_gender+child_income+ba000_w2_3+total_support+zda040+zda059+da002_w2_1+da041+ga002+hc005+hd001+age)) )%>%
+  mutate(rmse2 = map_dbl(splits, ~train_lm(split = .x, formula = index ~ child_gender+child_income+ba000_w2_3+family_support+zda040+zda059+da002_w2_1+da041+income+Deposit+loan+age)) )%>%
+  select(id,rmse1,rmse2)
+
+index_resamples3 %>% 
   mutate(rmse1 = map_dbl(splits, ~train_lm(split = .x, formula = index ~ child_gender+child_income+ba000_w2_3+total_support+zda040+zda059+da002_w2_1+da041+ga002+hc005+hd001+age)) )%>%
   mutate(rmse2 = map_dbl(splits, ~train_lm(split = .x, formula = index ~ child_gender+child_income+ba000_w2_3+family_support+zda040+zda059+da002_w2_1+da041+income+Deposit+loan+age)) )%>%
   select(id,rmse1,rmse2)
