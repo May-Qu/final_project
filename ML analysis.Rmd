@@ -1,0 +1,278 @@
+---
+title: "Machine Learning"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+library(haven)
+library(Hmisc)
+library(tidyverse)
+library(tidymodels)
+
+Health_Status_and_Functioning <- read_dta("/Users/zoe/Desktop/CHARLS/2015_data/Health_Status_and_Functioning.dta")
+View(Health_Status_and_Functioning)
+
+Happiness <- Health_Status_and_Functioning %>%
+  select(ID,dc042_w3,dc043_w3,dc044_w3,dc028)%>%
+  filter(!is.na(dc042_w3),!is.na(dc043_w3),!is.na(dc044_w3),!is.na(dc028))
+
+
+H_4 <- Happiness %>%
+  filter(dc043_w3!=6&dc044_w3!=6)%>%
+  mutate(index =0.2*dc042_w3 + 0.2* dc043_w3 +0.2*dc044_w3 + 0.4*dc028)
+
+H_3a <- Happiness %>%
+  filter(dc043_w3==6)%>%
+  mutate(index = 0.3*dc044_w3+0.3*dc042_w3+0.4*dc028)
+H_3b <- Happiness %>%
+  filter(dc044_w3 == 6)%>%
+  mutate(index = 0.3*dc043_w3+0.3*dc042_w3+0.4*dc028)
+H_2 <- Happiness%>%
+  filter(dc043_w3==6&dc044_w3==6)
+#No obs with two invalid answers
+hindex<-rbind(H_4,H_3a,H_3b)
+#weighted happiness index added
+
+
+Demographic_Background <- read_dta("/Users/zoe/Desktop/CHARLS/2015_data/Demographic_Background.dta") %>%
+  select(ID, ba000_w2_3, ba004_w3_1) %>%
+  filter(!is.na(ID), !is.na(ba000_w2_3), !is.na(ba004_w3_1))
+
+Family_transfer <- read_dta("/Users/zoe/Desktop/CHARLS/2015_data/Family_Transfer.dta") %>%
+  mutate_all(funs(ifelse(is.na(.), 0, .)))
+total_support <- Family_transfer$ce009_1_1_ + Family_transfer$ce009_1_2_ + Family_transfer$ce009_1_3_ + Family_transfer$ce009_1_4_ + Family_transfer$ce009_1_5_ + Family_transfer$ce009_1_6_ + Family_transfer$ce009_1_7_ + Family_transfer$ce009_1_8_ + Family_transfer$ce009_1_9_ + Family_transfer$ce009_1_10_ + Family_transfer$ce009_1_11_ + Family_transfer$ce009_1_12_ + Family_transfer$ce009_1_13_ + Family_transfer$ce009_1_14_ + Family_transfer$ce009_1_16_ + Family_transfer$ce009_1_16_
+Family_transfer <- cbind(Family_transfer, total_support) %>%
+  select(ID, total_support)
+
+Individual_Income <- read_dta("/Users/zoe/Desktop/CHARLS/2015_data/Individual_Income.dta") %>%
+  select(ID, ga002, hc005,hd001) %>%
+  filter(!is.na(ID), !is.na(ga002),!is.na(hc005),!is.na(hd001))
+
+Child <- read_dta("/Users/zoe/Desktop/CHARLS/2015_data/Child.dta") %>%
+  select(ID, gender, cb069) %>%
+  filter(!is.na(ID), !is.na(gender), !is.na(cb069))
+
+Health <- read_dta("/Users/zoe/Desktop/CHARLS/2015_data/Health_Status_and_Functioning.dta") %>%
+  select(ID, da040, da059, da002_w2_1, da041) %>%
+  filter(!is.na(ID), !is.na(da040), !is.na(da059), !is.na(da002_w2_1), !is.na(da041))
+
+hindex_v0 <- select(hindex,ID,index)
+hindex_v1 <- inner_join(x= hindex_v0,y= Child,by = "ID")
+hindex_v2 <- inner_join(x= hindex_v1,y= Demographic_Background,by = "ID")
+hindex_v3 <- inner_join(x= hindex_v2,y= Family_transfer,by = "ID")
+hindex_v4 <- inner_join(x= hindex_v3,y= Health,by = "ID")
+hindex_final <- inner_join(x= hindex_v4,y= Individual_Income,by = "ID")
+hindex_final <- hindex_final%>%
+  rename(child_gender = gender,child_income = cb069)%>%
+  mutate(age = 2020-ba004_w3_1,)
+```
+
+
+
+```{r, }
+hindex_ml <- hindex_final[,-6]
+hindex_ml <- hindex_ml[,-1]
+
+label(hindex_ml$index) <- "happiness index"
+
+mean(hindex_ml$ga002)
+mean(hindex_ml$hc005)
+mean(hindex_ml$hd001)
+mean(hindex_ml$total_support)
+
+hindex_ml <- hindex_ml %>%
+  mutate(income = ifelse(ga002>17000,"1","0"))%>%
+  mutate(Deposit = ifelse(hc005>25000,"1","0"))%>%
+  mutate(loan = ifelse(hd001<6000,"1","0"))%>%
+  mutate(family_support = ifelse(total_support>5000,"1","0"))
+
+
+set.seed(seed = 20200503)
+split <- initial_split(hindex_ml, prop = 0.8)
+index_training <- training(split) 
+index_testing <- testing(split)
+
+index_resamples <- vfold_cv(data = index_training, v = 10)
+index_resamples2 <- vfold_cv(data = index_training, v = 15)
+index_resamples3 <- vfold_cv(data = index_training, v = 5)
+
+train_lm <- function(split, formula, ...) {
+  analysis_data <- analysis(split)
+  model1 <- linear_reg() %>% 
+    set_engine("lm") %>% 
+    fit(formula, data = analysis_data)
+  assessment_data <- assessment(split)
+  rmse <- bind_cols( assessment_data, predict(model1, assessment_data) ) %>% 
+    rmse(truth =as.numeric(index), estimate = .pred) %>% 
+    pull(.estimate)
+  return(rmse)
+}
+
+
+train_lm2 <- function(split, formula, ...) {
+  
+  analysis_data <- analysis(split)
+  model2 <- linear_reg() %>% 
+    set_engine("lm") %>% 
+    fit(formula, data = analysis_data)
+  assessment_data <- assessment(split)
+  rmse <- bind_cols( assessment_data, predict(model1, assessment_data) ) %>% 
+    rmse(truth =as.numeric(index), estimate = .pred) %>% 
+    pull(.estimate)
+  return(rmse)
+}
+
+index_resamples %>% 
+  mutate(rmse1 = map_dbl(splits, ~train_lm(split = .x, formula = index ~ child_gender+child_income+ba000_w2_3+total_support+da040+da059+da002_w2_1+da041+ga002+hc005+hd001+age)) )%>%
+  mutate(rmse2 = map_dbl(splits, ~train_lm(split = .x, formula = index ~ child_gender+child_income+ba000_w2_3+family_support+da040+da059+da002_w2_1+da041+income+Deposit+loan+age)) )%>%
+  select(id,rmse1,rmse2)
+
+index_resamples2 %>% 
+  mutate(rmse1 = map_dbl(splits, ~train_lm(split = .x, formula = index ~ child_gender+child_income+ba000_w2_3+total_support+da040+da059+da002_w2_1+da041+ga002+hc005+hd001+age)) )%>%
+  mutate(rmse2 = map_dbl(splits, ~train_lm(split = .x, formula = index ~ child_gender+child_income+ba000_w2_3+family_support+da040+da059+da002_w2_1+da041+income+Deposit+loan+age)) )%>%
+  select(id,rmse1,rmse2)
+
+index_resamples3 %>% 
+  mutate(rmse1 = map_dbl(splits, ~train_lm(split = .x, formula = index ~ child_gender+child_income+ba000_w2_3+total_support+da040+da059+da002_w2_1+da041+ga002+hc005+hd001+age)) )%>%
+  mutate(rmse2 = map_dbl(splits, ~train_lm(split = .x, formula = index ~ child_gender+child_income+ba000_w2_3+family_support+da040+da059+da002_w2_1+da041+income+Deposit+loan+age)) )%>%
+  select(id,rmse1,rmse2)
+```
+
+
+```{r, }
+origin <- read.csv("/Users/zoe/Desktop/finaldata.csv")
+
+hsubset <- origin %>%
+  mutate(happy = case_when(index > 3 ~ "extensively happy",
+                           index == 3 ~ "narrowly happy",
+                           index < 3 ~"unhappy")) %>%
+  mutate(happy = factor(happy)) %>%
+  select(-ID)
+
+# knn
+set.seed(19920314)
+split <- initial_split(data = hsubset, prop = 0.8)
+happy_training <- training(split)
+happy_testing <- testing(split)
+
+recipe <-
+  recipe(formula = happy ~ .,
+         data = happy_training) %>% step_normalize(-happy) %>%
+  prep()
+
+model <-nearest_neighbor(mode = "classification", neighbors = 11) %>%
+  set_engine(engine = "kknn") %>%
+  fit(formula = happy ~., data = bake(object = recipe, new_data = happy_training))
+  
+prediction <- bind_cols(
+  happy_testing,
+  decision_tree = predict(model, bake(object = recipe,
+                                      new_data = happy_testing))
+)
+
+prediction %>%
+  conf_mat(truth = happy,
+           estimate = .pred_class)
+
+
+
+#cart
+set.seed(20200301)
+split_c <- initial_split(data = hsubset, prop = 0.8)
+happy_training <- training(split)
+happy_testing <- testing(split)
+
+model_c <-
+  decision_tree(mode = "classification") %>%
+  set_engine(engine = "rpart") %>%
+  fit(formula = happy ~., data = happy_training)
+
+prediction <- bind_cols(
+  happy_testing,
+  decision_tree = predict(model, happy_testing)
+)
+
+prediction %>%
+  conf_mat(truth = happy,
+           estimate = .pred_class)
+
+
+
+# knn & cart regression model
+hr <- origin %>%
+  select(-ID)
+
+sr <- initial_split(data = hr, prop = 0.8)
+h_training <- training(sr)
+h_testing <- testing(sr)
+
+h_resamples <- vfold_cv(data = hr, v = 10)
+
+train_imputation <- function(split, formula, model, ...) {
+  analysis_data <- analysis(split)
+  if (model == "knn") {
+    model <-
+    nearest_neighbor(mode = "regression", 
+                     neighbors = 5) %>%
+      set_engine("kknn") %>%
+      fit(formula, data = analysis_data)
+  } else if (model == "cart") {
+    model <-
+      decision_tree(mode = "regression") %>%
+      set_engine("rpart") %>%
+      fit(formula, data = analysis_data)
+  }
+  assessment_data <- assessment(split)
+  rmse <- bind_cols(
+    assessment_data,
+    predict(model, assessment_data)
+  ) %>%
+    rmse(truth = index, estimate = .pred) %>%
+    pull(.estimate)
+  return(rmse)
+}
+
+h_resamples <- h_resamples %>%
+  mutate(knn_rmse = map_dbl(.x = splits,
+                            .f = ~train_imputation(split = .x,
+                                              formula = index ~ . ,
+                                              model = "knn")))
+
+h_resamples <- h_resamples %>%
+  mutate(cart_rmse = map_dbl(.x = splits,
+                            .f = ~train_imputation(split = .x,
+                                                   formula = index ~ . ,
+                                                   model = "cart")))
+h_resamples <- h_resamples %>%
+  select(-splits)
+
+knitr::kable(h_resamples)
+
+h_resamples %>% 
+  pivot_longer(-id) %>%
+  ggplot(aes(x = id,
+             y = value,
+             color = name, group = name)) +
+  geom_point() +
+  geom_line() + 
+  scale_y_continuous(limits = c(0, NA))
+
+summarise(h_resamples, mean(knn_rmse), mean(cart_rmse))
+    
+hm <-
+  decision_tree(mode = "regression") %>%
+  set_engine("rpart") %>%
+  fit(index ~ . ,
+      data = h_training)
+
+bind_cols(
+  h_testing,
+  predict(hm, h_testing) 
+) %>%
+  metrics(truth = index, estimate = .pred)
+```
+
+
+
