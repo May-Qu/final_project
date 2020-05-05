@@ -47,8 +47,8 @@ Child <- read_dta("2015_data/Child.dta") %>%
   filter(!is.na(ID), !is.na(gender), !is.na(cb069))
 
 Health <- read_dta("2015_data/Health_Status_and_Functioning.dta") %>%
-  select(ID, zda040, zda059, da002_w2_1, da041) %>%
-  filter(!is.na(ID), !is.na(zda040), !is.na(zda059), !is.na(da002_w2_1), !is.na(da041))
+  select(ID, da040, da059, da002_w2_1, da041) %>%
+  filter(!is.na(ID), !is.na(da040), !is.na(da059), !is.na(da002_w2_1), !is.na(da041))
 
 hindex_v0 <- select(hindex,ID,index)
 hindex_v1 <- inner_join(x= hindex_v0,y= Child,by = "ID")
@@ -115,18 +115,18 @@ train_lm2 <- function(split, formula, ...) {
 }
 
 index_resamples %>% 
-  mutate(rmse1 = map_dbl(splits, ~train_lm(split = .x, formula = index ~ child_gender+child_income+ba000_w2_3+total_support+zda040+zda059+da002_w2_1+da041+ga002+hc005+hd001+age)) )%>%
-  mutate(rmse2 = map_dbl(splits, ~train_lm(split = .x, formula = index ~ child_gender+child_income+ba000_w2_3+family_support+zda040+zda059+da002_w2_1+da041+income+Deposit+loan+age)) )%>%
+  mutate(rmse1 = map_dbl(splits, ~train_lm(split = .x, formula = index ~ child_gender+child_income+ba000_w2_3+total_support+da040+da059+da002_w2_1+da041+ga002+hc005+hd001+age)) )%>%
+  mutate(rmse2 = map_dbl(splits, ~train_lm(split = .x, formula = index ~ child_gender+child_income+ba000_w2_3+family_support+da040+da059+da002_w2_1+da041+income+Deposit+loan+age)) )%>%
   select(id,rmse1,rmse2)
 
 index_resamples2 %>% 
-  mutate(rmse1 = map_dbl(splits, ~train_lm(split = .x, formula = index ~ child_gender+child_income+ba000_w2_3+total_support+zda040+zda059+da002_w2_1+da041+ga002+hc005+hd001+age)) )%>%
-  mutate(rmse2 = map_dbl(splits, ~train_lm(split = .x, formula = index ~ child_gender+child_income+ba000_w2_3+family_support+zda040+zda059+da002_w2_1+da041+income+Deposit+loan+age)) )%>%
+  mutate(rmse1 = map_dbl(splits, ~train_lm(split = .x, formula = index ~ child_gender+child_income+ba000_w2_3+total_support+da040+da059+da002_w2_1+da041+ga002+hc005+hd001+age)) )%>%
+  mutate(rmse2 = map_dbl(splits, ~train_lm(split = .x, formula = index ~ child_gender+child_income+ba000_w2_3+family_support+da040+da059+da002_w2_1+da041+income+Deposit+loan+age)) )%>%
   select(id,rmse1,rmse2)
 
 index_resamples3 %>% 
-  mutate(rmse1 = map_dbl(splits, ~train_lm(split = .x, formula = index ~ child_gender+child_income+ba000_w2_3+total_support+zda040+zda059+da002_w2_1+da041+ga002+hc005+hd001+age)) )%>%
-  mutate(rmse2 = map_dbl(splits, ~train_lm(split = .x, formula = index ~ child_gender+child_income+ba000_w2_3+family_support+zda040+zda059+da002_w2_1+da041+income+Deposit+loan+age)) )%>%
+  mutate(rmse1 = map_dbl(splits, ~train_lm(split = .x, formula = index ~ child_gender+child_income+ba000_w2_3+total_support+da040+da059+da002_w2_1+da041+ga002+hc005+hd001+age)) )%>%
+  mutate(rmse2 = map_dbl(splits, ~train_lm(split = .x, formula = index ~ child_gender+child_income+ba000_w2_3+family_support+da040+da059+da002_w2_1+da041+income+Deposit+loan+age)) )%>%
   select(id,rmse1,rmse2)
 
 
