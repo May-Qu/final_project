@@ -1,7 +1,7 @@
 # Final project: Prediction of the Happiness Index for Elderly People in China
 
 
-##### Yifan Qu, Xi Zou
+#### Yifan Qu, Xi Zou
 
 ### Background:
 
