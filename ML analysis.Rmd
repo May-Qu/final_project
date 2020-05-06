@@ -4,7 +4,7 @@ output: html_document
 editor_options: 
   chunk_output_type: console
 ---
-
+We basically apply the data to three different models to predict the elders’ happiness: linear regression, knn, and cart. In each model, we make some adjustments to variables in order to predict more accurately.  
 ```{r, include=FALSE, message=FALSE}
 library(haven)
 library(Hmisc)
@@ -68,7 +68,8 @@ hindex_final <- hindex_final%>%
   mutate(age = 2020-ba004_w3_1,)
 ```
 
-
+# Linear Regression Model
+In this model, we choose different numbers of folds to see if the quantity of partitions affects the prediction outcome. Then we transform *income*, *loan*, and *deposit* variables from numeric to categorical (above average or not), and measur the error of each model in predicting the happiness by using rmse. The result shows that the difference of using numeric and categorical variables are not significant, as well the number of folds. Overall, the linear regression model is acceptable but barely fitting (rmse in each case is larger than 0.5).   
 
 ```{r, warning=FALSE, message=FALSE}
 hindex_ml <- hindex_final[,-6]
@@ -139,6 +140,11 @@ index_resamples3 %>%
   select(id,rmse1,rmse2)
 ```
 
+# Knn & Cart Model 
+Since we found that there is a large proportion of observations having a value of 3 when measuring happiness, we decide to involve both classification and regression models. And considering people’s happiness towards life may be affected by retirement, we also fit different age groups to the model using knn and cart algorithms.  
+
+## Classification 
+We transform the type of the dependent variable *happiness* from numeric to factor. And the level of happiness was classified as “extensively happy”, “narrowly happy”, and “unhappy”. Then test the overall sample (age>45) and the elders (age>60). Knn performs better than Cart in both two models, with the training accuracy of 85.67% and 94.07%.  
 
 ```{r, warning=FALSE, message=FALSE }
 origin <- read.csv("/Users/zoe/Desktop/finaldata.csv") %>%
@@ -177,7 +183,7 @@ prediction <- bind_cols(
 prediction %>%
   conf_mat(truth = happy,
            estimate = .pred_class)
-
+ 
 #knn_classification 2 (age>64)
 set.seed(19920314)
 split_k2 <- initial_split(data = hsubset1, prop = 0.8)
@@ -246,6 +252,8 @@ prediction_c2 %>%
            estimate = .pred_class)
 ```
 
+## Regression
+As the graph shows, the difference between knn and cart algorithm are not significant, and both two models are ill-fitting (rmse>0.5).  
 
 ```{r, }
 # knn & cart regression model
@@ -295,8 +303,6 @@ h_resamples <- h_resamples %>%
                                                    model = "cart")))
 h_resamples <- h_resamples %>%
   select(-splits)
-
-knitr::kable(h_resamples)
 
 h_resamples %>% 
   pivot_longer(-id) %>%

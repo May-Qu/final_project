@@ -366,6 +366,10 @@ summary {
 </div>
 
 
+<p>We basically apply the data to three different models to predict the elders’ happiness: linear regression, knn, and cart. In each model, we make some adjustments to variables in order to predict more accurately.</p>
+<div id="linear-regression-model" class="section level1">
+<h1>Linear Regression Model</h1>
+<p>In this model, we choose different numbers of folds to see if the quantity of partitions affects the prediction outcome. Then we transform <em>income</em>, <em>loan</em>, and <em>deposit</em> variables from numeric to categorical (above average or not), and measur the error of each model in predicting the happiness by using rmse. The result shows that the difference of using numeric and categorical variables are not significant, as well the number of folds. Overall, the linear regression model is acceptable but barely fitting (rmse in each case is larger than 0.5).</p>
 <pre class="r"><code>hindex_ml &lt;- hindex_final[,-6]
 hindex_ml &lt;- hindex_ml[,-1]
 
@@ -472,6 +476,13 @@ index_resamples %&gt;%
 ## 3 Fold3 0.589 0.588
 ## 4 Fold4 0.543 0.543
 ## 5 Fold5 0.551 0.555</code></pre>
+</div>
+<div id="knn-cart-model" class="section level1">
+<h1>Knn &amp; Cart Model</h1>
+<p>Since we found that there is a large proportion of observations having a value of 3 when measuring happiness, we decide to involve both classification and regression models. And considering people’s happiness towards life may be affected by retirement, we also fit different age groups to the model using knn and cart algorithms.</p>
+<div id="classification" class="section level2">
+<h2>Classification</h2>
+<p>We transform the type of the dependent variable <em>happiness</em> from numeric to factor. And the level of happiness was classified as “extensively happy”, “narrowly happy”, and “unhappy”. Then test the overall sample (age&gt;45) and the elders (age&gt;60). Knn performs better than Cart in both two models, with the training accuracy of 85.67% and 94.07%.</p>
 <pre class="r"><code>origin &lt;- read.csv(&quot;/Users/zoe/Desktop/finaldata.csv&quot;) %&gt;%
   select(-X)
 
@@ -591,6 +602,10 @@ prediction_c2 %&gt;%
 ##   extensively happy                 0              0       0
 ##   narrowly happy                    1              0       2
 ##   unhappy                          17             31      67</code></pre>
+</div>
+<div id="regression" class="section level2">
+<h2>Regression</h2>
+<p>As the graph shows, the difference between knn and cart algorithm are not significant, and both two models are ill-fitting (rmse&gt;0.5).</p>
 <pre class="r"><code># knn &amp; cart regression model
 hr &lt;- origin %&gt;%
   select(-ID)
@@ -639,69 +654,7 @@ h_resamples &lt;- h_resamples %&gt;%
 h_resamples &lt;- h_resamples %&gt;%
   select(-splits)
 
-knitr::kable(h_resamples)</code></pre>
-<table>
-<thead>
-<tr class="header">
-<th align="left">id</th>
-<th align="right">knn_rmse</th>
-<th align="right">cart_rmse</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">Fold01</td>
-<td align="right">0.5392816</td>
-<td align="right">0.5861371</td>
-</tr>
-<tr class="even">
-<td align="left">Fold02</td>
-<td align="right">0.5472569</td>
-<td align="right">0.5446072</td>
-</tr>
-<tr class="odd">
-<td align="left">Fold03</td>
-<td align="right">0.5726460</td>
-<td align="right">0.5321170</td>
-</tr>
-<tr class="even">
-<td align="left">Fold04</td>
-<td align="right">0.4999408</td>
-<td align="right">0.5345040</td>
-</tr>
-<tr class="odd">
-<td align="left">Fold05</td>
-<td align="right">0.5536215</td>
-<td align="right">0.5439433</td>
-</tr>
-<tr class="even">
-<td align="left">Fold06</td>
-<td align="right">0.5690884</td>
-<td align="right">0.5786695</td>
-</tr>
-<tr class="odd">
-<td align="left">Fold07</td>
-<td align="right">0.5642517</td>
-<td align="right">0.5455892</td>
-</tr>
-<tr class="even">
-<td align="left">Fold08</td>
-<td align="right">0.5468510</td>
-<td align="right">0.5331745</td>
-</tr>
-<tr class="odd">
-<td align="left">Fold09</td>
-<td align="right">0.5529911</td>
-<td align="right">0.5541478</td>
-</tr>
-<tr class="even">
-<td align="left">Fold10</td>
-<td align="right">0.5534733</td>
-<td align="right">0.5589248</td>
-</tr>
-</tbody>
-</table>
-<pre class="r"><code>h_resamples %&gt;% 
+h_resamples %&gt;% 
   pivot_longer(-id) %&gt;%
   ggplot(aes(x = id,
              y = value,
@@ -732,6 +685,8 @@ bind_cols(
 ## 1 rmse    standard       0.491
 ## 2 rsq     standard       0.197
 ## 3 mae     standard       0.395</code></pre>
+</div>
+</div>
 
 
 
