@@ -5,14 +5,13 @@ editor_options:
   chunk_output_type: console
 ---
 
-```{r setup, include=FALSE}
+```{r, include=FALSE, message=FALSE}
 library(haven)
 library(Hmisc)
 library(tidyverse)
 library(tidymodels)
 
 Health_Status_and_Functioning <- read_dta("/Users/zoe/Desktop/CHARLS/2015_data/Health_Status_and_Functioning.dta")
-View(Health_Status_and_Functioning)
 
 Happiness <- Health_Status_and_Functioning %>%
   select(ID,dc042_w3,dc043_w3,dc044_w3,dc028)%>%
@@ -71,7 +70,7 @@ hindex_final <- hindex_final%>%
 
 
 
-```{r, }
+```{r, warning=FALSE, message=FALSE}
 hindex_ml <- hindex_final[,-6]
 hindex_ml <- hindex_ml[,-1]
 
@@ -141,8 +140,9 @@ index_resamples3 %>%
 ```
 
 
-```{r, }
-origin <- read.csv("/Users/zoe/Desktop/finaldata.csv")
+```{r, warning=FALSE, message=FALSE }
+origin <- read.csv("/Users/zoe/Desktop/finaldata.csv") %>%
+  select(-X)
 
 hsubset <- origin %>%
   mutate(happy = case_when(index > 3 ~ "extensively happy",
@@ -151,7 +151,9 @@ hsubset <- origin %>%
   mutate(happy = factor(happy)) %>%
   select(-ID)
 
-# knn
+hsubset1 <- filter(hsubset, age > 60)
+
+# knn_classification 1 
 set.seed(19920314)
 split <- initial_split(data = hsubset, prop = 0.8)
 happy_training <- training(split)
@@ -176,30 +178,76 @@ prediction %>%
   conf_mat(truth = happy,
            estimate = .pred_class)
 
+#knn_classification 2 (age>64)
+set.seed(19920314)
+split_k2 <- initial_split(data = hsubset1, prop = 0.8)
+happy_training_k2 <- training(split_k2)
+happy_testing_k2 <- testing(split_k2)
 
+recipe_k2 <-
+  recipe(formula = happy ~ .,
+         data = happy_training_k2) %>% step_normalize(-happy) %>%
+  prep()
 
-#cart
-set.seed(20200301)
-split_c <- initial_split(data = hsubset, prop = 0.8)
-happy_training <- training(split)
-happy_testing <- testing(split)
-
-model_c <-
-  decision_tree(mode = "classification") %>%
-  set_engine(engine = "rpart") %>%
-  fit(formula = happy ~., data = happy_training)
-
-prediction <- bind_cols(
-  happy_testing,
-  decision_tree = predict(model, happy_testing)
+model_k2 <-nearest_neighbor(mode = "classification", neighbors = 11) %>%
+  set_engine(engine = "kknn") %>%
+  fit(formula = happy ~., data = bake(object = recipe, 
+                                      new_data = happy_training_k2))
+  
+prediction_k2 <- bind_cols(
+  happy_testing_k2,
+  decision_tree = predict(model, bake(object = recipe,
+                                      new_data = happy_testing_k2))
 )
 
-prediction %>%
+prediction_k2 %>%
   conf_mat(truth = happy,
            estimate = .pred_class)
 
 
+#cart classification 1
+set.seed(20200301)
+split_c <- initial_split(data = hsubset, prop = 0.8)
+happy_training_c <- training(split_c)
+happy_testing_c <- testing(split_c)
 
+model_c <-
+  decision_tree(mode = "classification") %>%
+  set_engine(engine = "rpart") %>%
+  fit(formula = happy ~., data = happy_training_c)
+
+prediction_c <- bind_cols(
+  happy_testing_c,
+  decision_tree = predict(model, happy_testing_c)
+)
+
+prediction_c %>%
+  conf_mat(truth = happy,
+           estimate = .pred_class)
+
+# cart classification 2 (age)
+set.seed(20200301)
+split_c2 <- initial_split(data = hsubset1, prop = 0.8)
+happy_training_c2 <- training(split_c2)
+happy_testing_c2 <- testing(split_c2)
+
+model_c2 <-
+  decision_tree(mode = "classification") %>%
+  set_engine(engine = "rpart") %>%
+  fit(formula = happy ~., data = happy_training_c2)
+
+prediction_c2 <- bind_cols(
+  happy_testing_c2,
+  decision_tree = predict(model, happy_testing_c2)
+)
+
+prediction_c2 %>%
+  conf_mat(truth = happy,
+           estimate = .pred_class)
+```
+
+
+```{r, }
 # knn & cart regression model
 hr <- origin %>%
   select(-ID)
@@ -211,23 +259,23 @@ h_testing <- testing(sr)
 h_resamples <- vfold_cv(data = hr, v = 10)
 
 train_imputation <- function(split, formula, model, ...) {
-  analysis_data <- analysis(split)
+  analysis_data1 <- analysis(split)
   if (model == "knn") {
     model <-
     nearest_neighbor(mode = "regression", 
                      neighbors = 5) %>%
       set_engine("kknn") %>%
-      fit(formula, data = analysis_data)
+      fit(formula, data = analysis_data1)
   } else if (model == "cart") {
     model <-
       decision_tree(mode = "regression") %>%
       set_engine("rpart") %>%
-      fit(formula, data = analysis_data)
+      fit(formula, data = analysis_data1)
   }
-  assessment_data <- assessment(split)
+  assessment_data1 <- assessment(split)
   rmse <- bind_cols(
-    assessment_data,
-    predict(model, assessment_data)
+    assessment_data1,
+    predict(model, assessment_data1)
   ) %>%
     rmse(truth = index, estimate = .pred) %>%
     pull(.estimate)
