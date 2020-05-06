@@ -9,6 +9,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
+<meta name="author" content="Yifan Qu, Xi Zou" />
 
 
 <title>Machine Learning</title>
@@ -362,13 +363,14 @@ summary {
 
 
 <h1 class="title toc-ignore">Machine Learning</h1>
+<h4 class="author">Yifan Qu, Xi Zou</h4>
 
 </div>
 
 
 <p>We basically apply the data to three different models to predict the elders’ happiness: linear regression, knn, and cart. In each model, we make some adjustments to variables in order to predict more accurately.</p>
-<div id="linear-regression-model" class="section level1">
-<h1>Linear Regression Model</h1>
+<div id="linear-regression-model" class="section level3">
+<h3>Linear Regression Model</h3>
 <p>In this model, we choose different numbers of folds to see if the quantity of partitions affects the prediction outcome. Then we transform <em>income</em>, <em>loan</em>, and <em>deposit</em> variables from numeric to categorical (above average or not), and measur the error of each model in predicting the happiness by using rmse. The result shows that the difference of using numeric and categorical variables are not significant, as well the number of folds. Overall, the linear regression model is acceptable but barely fitting (rmse in each case is larger than 0.5).</p>
 <pre class="r"><code>hindex_ml &lt;- hindex_final[,-6]
 hindex_ml &lt;- hindex_ml[,-1]
@@ -477,11 +479,11 @@ index_resamples %&gt;%
 ## 4 Fold4 0.543 0.543
 ## 5 Fold5 0.551 0.555</code></pre>
 </div>
-<div id="knn-cart-model" class="section level1">
-<h1>Knn &amp; Cart Model</h1>
+<div id="knn-cart-model" class="section level3">
+<h3>Knn &amp; Cart Model</h3>
 <p>Since we found that there is a large proportion of observations having a value of 3 when measuring happiness, we decide to involve both classification and regression models. And considering people’s happiness towards life may be affected by retirement, we also fit different age groups to the model using knn and cart algorithms.</p>
-<div id="classification" class="section level2">
-<h2>Classification</h2>
+<div id="classification" class="section level4">
+<h4>Classification</h4>
 <p>We transform the type of the dependent variable <em>happiness</em> from numeric to factor. And the level of happiness was classified as “extensively happy”, “narrowly happy”, and “unhappy”. Then test the overall sample (age&gt;45) and the elders (age&gt;60). Knn performs better than Cart in both two models, with the training accuracy of 85.67% and 94.07%.</p>
 <pre class="r"><code>origin &lt;- read.csv(&quot;/Users/zoe/Desktop/finaldata.csv&quot;) %&gt;%
   select(-X)
@@ -603,8 +605,8 @@ prediction_c2 %&gt;%
 ##   narrowly happy                    1              0       2
 ##   unhappy                          17             31      67</code></pre>
 </div>
-<div id="regression" class="section level2">
-<h2>Regression</h2>
+<div id="regression" class="section level4">
+<h4>Regression</h4>
 <p>As the graph shows, the difference between knn and cart algorithm are not significant, and both two models are ill-fitting (rmse&gt;0.5).</p>
 <pre class="r"><code># knn &amp; cart regression model
 hr &lt;- origin %&gt;%
@@ -686,6 +688,11 @@ bind_cols(
 ## 2 rsq     standard       0.197
 ## 3 mae     standard       0.395</code></pre>
 </div>
+</div>
+<div id="conclusions-and-policy-application" class="section level3">
+<h3>Conclusions and policy application</h3>
+<p>According to the models we established, we found that the happiness index is a variable that is difficult to quantify. At the same time, everyone has different standards of happiness, making it difficult to accurately predict a value. But we can roughly predict the degree of happiness using classification.</p>
+<p>With the rapid increase of the elderly population in China, it is important to pay attention to the happiness of the elderly. The key to the old-aged care system is to make the elderly feel happy. The happiness index will be helpful to establish a complete evaluation system for the quality of life of the elderly.</p>
 </div>
 
 
