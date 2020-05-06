@@ -1,5 +1,6 @@
 ---
 title: "Machine Learning"
+author: "Yifan Qu, Xi Zou"
 output: html_document
 editor_options: 
   chunk_output_type: console
@@ -68,7 +69,7 @@ hindex_final <- hindex_final%>%
   mutate(age = 2020-ba004_w3_1,)
 ```
 
-# Linear Regression Model
+### Linear Regression Model
 In this model, we choose different numbers of folds to see if the quantity of partitions affects the prediction outcome. Then we transform *income*, *loan*, and *deposit* variables from numeric to categorical (above average or not), and measur the error of each model in predicting the happiness by using rmse. The result shows that the difference of using numeric and categorical variables are not significant, as well the number of folds. Overall, the linear regression model is acceptable but barely fitting (rmse in each case is larger than 0.5).   
 
 ```{r, warning=FALSE, message=FALSE}
@@ -140,10 +141,10 @@ index_resamples3 %>%
   select(id,rmse1,rmse2)
 ```
 
-# Knn & Cart Model 
+### Knn & Cart Model 
 Since we found that there is a large proportion of observations having a value of 3 when measuring happiness, we decide to involve both classification and regression models. And considering people’s happiness towards life may be affected by retirement, we also fit different age groups to the model using knn and cart algorithms.  
 
-## Classification 
+#### Classification 
 We transform the type of the dependent variable *happiness* from numeric to factor. And the level of happiness was classified as “extensively happy”, “narrowly happy”, and “unhappy”. Then test the overall sample (age>45) and the elders (age>60). Knn performs better than Cart in both two models, with the training accuracy of 85.67% and 94.07%.  
 
 ```{r, warning=FALSE, message=FALSE }
@@ -252,7 +253,7 @@ prediction_c2 %>%
            estimate = .pred_class)
 ```
 
-## Regression
+#### Regression
 As the graph shows, the difference between knn and cart algorithm are not significant, and both two models are ill-fitting (rmse>0.5).  
 
 ```{r, }
@@ -329,4 +330,9 @@ bind_cols(
 ```
 
 
+### Conclusions and policy application
+
+According to the models we established, we found that the happiness index is a variable that is difficult to quantify. At the same time, everyone has different standards of happiness, making it difficult to accurately predict a value. But we can roughly predict the degree of happiness using classification.
+
+With the rapid increase of the elderly population in China, it is important to pay attention to the happiness of the elderly. The key to the old-aged care system is to make the elderly feel happy. The happiness index will be helpful to establish a complete evaluation system for the quality of life of the elderly.
 
